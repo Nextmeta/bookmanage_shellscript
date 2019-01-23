@@ -25,6 +25,10 @@ usr_login()
 }
 check_name_pwd()
 {
+	# Just test code, please don't programming like this in real world
+	# You should use some encrypt algorithm to prevent reverse cracking.
+	# Such as, use uniform hash function. 
+
 	if [ $user_name == "hanwnz" ] && [ $user_passwd == "znwnahli1314" ]
 	then 
 		echo_interface;
