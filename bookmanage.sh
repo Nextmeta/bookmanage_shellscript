@@ -29,7 +29,7 @@ check_name_pwd()
 	# You should use some encrypt algorithm to prevent reverse cracking.
 	# Such as, use uniform hash function. 
 
-	if [ $user_name == "hanwnz" ] && [ $user_passwd == "znwnahli1314" ]
+	if [ "$user_name" == "hanwnz" ] && [ "$user_passwd" == "znwnahli1314" ]
 	then 
 		echo_interface;
 		return 1;
@@ -86,39 +86,64 @@ add_books()
 find_books()
 {
 	istrue=0;
-	while [ $istrue == 0 ]
-	do
-		echo -e "Which book do you want to find?";
-		echo -n "You want to find book by [Name|ISBN]: ";
-		read find_type;
-		if [ $find_type == "Name" ]
-		then
-			find_by_name;
+	db_is_exist;
+	isexist=$?;
+	if [ $isexist == "0" ]
+	then
+		echo "No database!";
+	else 
+		while [ $istrue == 0 ]
+		do
+			echo -e "Which book do you want to find?";
+			echo -n "You want to find book by [Name|ISBN]: ";
+			read find_type;
+			if [ "$find_type" == "Name" ]
+			then
+				find_by_name;	
+			elif [ "$find_type" == "ISBN" ]
+			then
+				find_by_isbn;
+			else 
+				echo_choice_error;
+			fi
+			echo -e -n "Do you want to continue this operate?[y/n]:"
+			read iscontinue;
 		
-		elif [ $find_type == "ISBN" ]
-		then
-			find_by_isbn;
-		else 
-			echo_choice_error;
-		fi
-	done 
-
+			if [ "$iscontinue" == "y" ]
+			then 
+				continue;
+			else
+				break;
+			fi 
+		done 
+	fi
 }
+
+db_is_exist()
+{
+	dbis_exist=$(find -name "book.db");
+	if [ -z $dbis_exist ]
+	then 
+		return 0;
+	else
+		return 1;
+	fi 
+}
+
+
 find_by_name()
 {
 	echo -n "Book Name: ";
 	read book_name;
-	find=$(echo $(grep -w "$book_name" book.db ));
-	name=$(echo $(grep -w "$book_name" book.db | awk -F '::' '{print $1}'));
-	isbn=$(echo $(grep -w "$book_name" book.db | awk -F '::' '{print $2}'));
-	price=$(echo $(grep -w "$book_name" book.db | awk -F '::' '{print $3}'));
-	number=$(echo $(grep -w "$book_name" book.db | awk -F '::' '{print $4}'));
-
-	if [ -z "$find" ]
+	echo $book_name;
+	name=$(echo $(awk -F '::' '{print $1}' "book.db" | grep -w "$book_name"));
+	if [ -z "$name" ]
 	then
 		echo "Sorry, can't found this book name!";
-		echo_choice_error;
 	else 
+		isbn=$(echo $(grep -w "$book_name" book.db | awk -F '::' '{print $2}'));
+		price=$(echo $(grep -w "$book_name" book.db | awk -F '::' '{print $3}'));
+		number=$(echo $(grep -w "$book_name" book.db | awk -F '::' '{print $4}'));
 		echo -e "\n\nFound book $book_name!\n";
 		echo -e -n "Book Name: ";
 		echo -e "<<$name>>";
@@ -135,11 +160,83 @@ find_by_isbn()
 {
 	echo -n "Book ISBN: ";
 	read book_isbn;
+	echo $book_isbn >> tmpfile;
+	linenum=$(grep -o "-" tmpfile| wc -l);
+	if [ "$linenum" != 2 ]
+	then 
+		echo "Sorry, your isbn is error";
+		rm -rf tmpfile;
+		return;
+	fi 
+	deal_book_isbn=$(echo $(awk -F "-" '{print $1$2$3}' "tmpfile"));
+	isbn=$(echo $(awk -F '::' '{print $2}' "book.db" |
+		awk -F "-" '{print $1$2$3}' | grep -w $deal_book_isbn))
+	
+	if [ "$isbn" != "$deal_book_isbn" ]
+	then 
+		echo "Sorry, can't found this book isbn!";
+	else 
+		name=$(echo $(grep -w "$book_isbn" book.db | awk -F '::' '{print $1}'));
+		price=$(echo $(grep -w "$book_isbn" book.db | awk -F '::' '{print $3}'));
+		number=$(echo $(grep -w "$book_isbn" book.db | awk -F '::' '{print $4}'));
+		echo -e "\n\nFound book $book_isbn!\n";
+		echo -e -n "Book Name: ";
+		echo -e "<<$name>>";
+		echo -e -n "Book ISBN: ";
+		echo -e "$book_isbn";
+		echo -e -n "Book Price: ";
+		echo -e "$price";
+		echo -e -n "Book Number: ";
+		echo -e "$number\n";
+	fi
+	rm -rf tmpfile;
 }
 
+get_booknum()
+{
+	local n=`wc -l "book.db" | awk '{print $1}'`;
+	echo $n;
+}
+print_list_book()
+{
+	printf "%-20s %-16s %-16s %-16s\n" "Book Name" "Book ISBN" "Book Price" "Book Number";
+	line=`get_booknum`;
+	i=0;
+
+	while [ "$i" -lt "$line" ];
+	do 
+		i=$(($i+1));
+		name=`cat "book.db" | sed -n "$i"p"" "book.db" | awk -F "::" '{print $1}'`;
+		isbn=`cat "book.db" | sed -n "$i"p"" "book.db" | awk -F "::" '{print $2}'`;
+		price=`cat "book.db" | sed -n "$i"p"" "book.db" | awk -F "::" '{print $3}'`;
+		number=`cat "book.db" | sed -n "$i"p"" "book.db" | awk -F "::" '{print $4}'`;
+		printf "%-20s %-16s %-16.2f %-16d\n" $name $isbn $price $number;
+
+	done 
+	
+}
 delete_books()
 {
-	echo -e;
+	db_is_exist;
+	isexist=$?;
+	if [ $isexist == "0" ]
+	then
+		echo "no database"
+	else 
+		booknum=`get_booknum`;	
+		echo $booknum;
+		echo -n "Do you want to listing book information?[y/n]:";
+		read islist;
+		if [ "$islist" == "y" ]
+		then
+			echo -e "List of books:"
+			print_list_book;
+		fi 
+
+		echo -e -n "\n\nWhich book do you want to delete?(1-$booknum)";
+		read whichbook;
+
+	fi 
 }
 update_books()
 {
@@ -150,7 +247,7 @@ echo_choice_error()
 	echo -e "Sorry, your choice error, Please choice correct item!"
 	echo -n "Try again?[y/n]: "
 	read try;
-	if [ $try == "n" ]
+	if [ "$try" == "n" ]
 	then 
 		istrue=1;
 	fi
@@ -159,7 +256,7 @@ echo_error()
 {
 	echo -n "Username or password failed!(Try again?): ";
 	read try;
-	if [ $try == "n" ]
+	if [ "$try" == "n" ]
 	then
 		exit -1;
 	fi
