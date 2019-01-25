@@ -48,7 +48,8 @@ echo_interface()
 		echo -e "2. Find books";
 		echo -e "3. Delete books";
 		echo -e "4. Update books";
-		echo -e "5. Exit system";
+		echo -e "5. List books";
+		echo -e "6. Exit system";
 		echo -n "Which item do you want to choice(1-4): ";
 		read choice;
 		case "$choice" in
@@ -56,7 +57,8 @@ echo_interface()
 			2) find_books;;
 			3) delete_books;;
 			4) update_books;;
-			5) istrue=1;;
+			5) list_books;;
+			6) istrue=1;;
 			*) echo_choice_error;;
 		esac
 	done 
@@ -199,7 +201,7 @@ get_booknum()
 }
 print_list_book()
 {
-	printf "%-20s %-16s %-16s %-16s\n" "Book Name" "Book ISBN" "Book Price" "Book Number";
+	printf "\n%-20s %-16s %-16s %-16s\n" "Book Name" "Book ISBN" "Book Price" "Book Number";
 	line=`get_booknum`;
 	i=0;
 
@@ -221,7 +223,7 @@ delete_books()
 	isexist=$?;
 	if [ $isexist == "0" ]
 	then
-		echo "no database"
+		echo "No database!"
 	else 
 		booknum=`get_booknum`;	
 		echo $booknum;
@@ -235,8 +237,19 @@ delete_books()
 
 		echo -e -n "\n\nWhich book do you want to delete?(1-$booknum)";
 		read whichbook;
-
+		if [ -z "$whichbook" ] || [ "$whichbook" -gt $booknum ] || [ "$whichbook" -lt 1 ]
+		then 
+			echo_choice_error;
+		else 
+			sed "$whichbook"d"" book.db >> newfile
+			cp newfile book.db
+			rm -rf newfile
+		fi 
 	fi 
+}
+list_books()
+{
+	print_list_book;
 }
 update_books()
 {
