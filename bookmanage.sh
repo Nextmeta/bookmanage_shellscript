@@ -253,7 +253,40 @@ list_books()
 }
 update_books()
 {
-	echo -e;
+	db_is_exist;
+	isexist=$?;
+	if [ $isexist == "0" ]
+	then
+		echo "No database!"
+	else
+		booknum=`get_booknum`;	
+		echo $booknum;
+		echo -n "Do you want to listing book information?[y/n]:";
+		read islist;
+		if [ "$islist" == "y" ]
+		then
+			echo -e "List of books:"
+			print_list_book;
+		fi 
+		echo -e -n "\n\nWhich book do you want to update?(1-$booknum";
+		read whichbook;
+		if [ -z "$whichbook" ] || [ "$whichbook" -gt $booknum ] || [ "$whichbook" -lt 1 ]
+		then 
+			echo_choice_error;
+		else
+			sed "$whichbook"d"" book.db;
+			# not complete
+			echo -e -n "Book Name: ";
+			read book_name;
+			echo -e -n "Book ISBN: ";
+			read book_isbn;
+			echo -e -n "Book Price: ";
+			read book_price;
+			echo -e -n "Book Number: ";
+			read book_number;
+
+		fi 
+	fi 
 }
 echo_choice_error()
 {
