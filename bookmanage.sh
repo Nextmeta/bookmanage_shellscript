@@ -281,14 +281,14 @@ update_books()
 			echo -e "List of books:"
 			print_list_book;
 		fi 
-		echo -e -n "\n\nWhich book do you want to update?(1-$booknum";
+		echo -e -n "\n\nWhich book do you want to update?(1-$booknum)";
 		read whichbook;
 		if [ -z "$whichbook" ] || [ "$whichbook" -gt $booknum ] || [ "$whichbook" -lt 1 ]
 		then 
 			echo_choice_error;
 		else
-			sed "$whichbook"d"" .book.db;
 			# not complete
+			isempty=$(wc -l .book.db | awk -F ' ' '{print $1}');
 			echo -e -n "Book Name: ";
 			read book_name;
 			echo -e -n "Book ISBN: ";
@@ -297,7 +297,29 @@ update_books()
 			read book_price;
 			echo -e -n "Book Number: ";
 			read book_number;
-
+			
+			insert=$(echo -e "$book_name::$book_isbn::$book_price::$book_number");
+			if [ "$isempty" == "0" ]
+			then 
+				sed -i "$whichbook"d"" .book.db;
+				echo -e "$insert" > .book.db;
+				return;
+			fi
+			echo $whichbook and $booknum;	
+			if [ "$whichbook" == "1" ] 
+			then 
+				# first line 
+				sed -i "$whichbook"d"" .book.db;
+				sed -i "1s/^/$insert\n/" .book.db; 
+			elif [ "$whichbook" == "$booknum" ]
+			then    
+				# last line 
+				sed -i "$whichbook"d"" .book.db;
+				echo -e "$insert" >> .book.db;
+			else
+				sed -i "N;$whichbook"a"$insert" .book.db;
+				sed -i "$whichbook"d"" .book.db;
+			fi 
 		fi 
 	fi 
 }
