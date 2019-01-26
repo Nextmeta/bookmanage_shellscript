@@ -50,7 +50,7 @@ echo_interface()
 		echo -e "4. Update books";
 		echo -e "5. List books";
 		echo -e "6. Exit system";
-		echo -n "Which item do you want to choice(1-4): ";
+		echo -n "Which item do you want to choice(1-6): ";
 		read choice;
 		case "$choice" in
 			1) add_books;;
@@ -69,19 +69,19 @@ add_books()
 	echo -e "Which book do you want to adding?";
 	echo -n "Book Name: ";
 	read book_name;
-	echo -n "$book_name::" >> book.db;
+	echo -n "$book_name::" >> .book.db;
 
 	echo -n "Book ISBN: ";
 	read book_isbn;
-	echo -n "$book_isbn::" >> book.db;
+	echo -n "$book_isbn::" >> .book.db;
 	
 	echo -n "Book Price: ";
 	read book_price;
-	echo -n "$book_price::" >> book.db;
+	echo -n "$book_price::" >> .book.db;
 	
 	echo -n "Book Numbers: ";
 	read book_numbers;
-	echo -e "$book_numbers" >> book.db;
+	echo -e "$book_numbers" >> .book.db;
 
 	echo -e "Adding books sucessful!";
 }
@@ -123,7 +123,7 @@ find_books()
 
 db_is_exist()
 {
-	dbis_exist=$(find -name "book.db");
+	dbis_exist=$(find -name ".book.db");
 	if [ -z $dbis_exist ]
 	then 
 		return 0;
@@ -138,14 +138,14 @@ find_by_name()
 	echo -n "Book Name: ";
 	read book_name;
 	echo $book_name;
-	name=$(echo $(awk -F '::' '{print $1}' "book.db" | grep -w "$book_name"));
+	name=$(echo $(awk -F '::' '{print $1}' ".book.db" | grep -w "$book_name"));
 	if [ -z "$name" ]
 	then
 		echo "Sorry, can't found this book name!";
 	else 
-		isbn=$(echo $(grep -w "$book_name" book.db | awk -F '::' '{print $2}'));
-		price=$(echo $(grep -w "$book_name" book.db | awk -F '::' '{print $3}'));
-		number=$(echo $(grep -w "$book_name" book.db | awk -F '::' '{print $4}'));
+		isbn=$(echo $(grep -w "$book_name" .book.db | awk -F '::' '{print $2}'));
+		price=$(echo $(grep -w "$book_name" .book.db | awk -F '::' '{print $3}'));
+		number=$(echo $(grep -w "$book_name" .book.db | awk -F '::' '{print $4}'));
 		echo -e "\n\nFound book $book_name!\n";
 		echo -e -n "Book Name: ";
 		echo -e "<<$name>>";
@@ -171,16 +171,16 @@ find_by_isbn()
 		return;
 	fi 
 	deal_book_isbn=$(echo $(awk -F "-" '{print $1$2$3}' "tmpfile"));
-	isbn=$(echo $(awk -F '::' '{print $2}' "book.db" |
+	isbn=$(echo $(awk -F '::' '{print $2}' ".book.db" |
 		awk -F "-" '{print $1$2$3}' | grep -w $deal_book_isbn))
 	
 	if [ "$isbn" != "$deal_book_isbn" ]
 	then 
 		echo "Sorry, can't found this book isbn!";
 	else 
-		name=$(echo $(grep -w "$book_isbn" book.db | awk -F '::' '{print $1}'));
-		price=$(echo $(grep -w "$book_isbn" book.db | awk -F '::' '{print $3}'));
-		number=$(echo $(grep -w "$book_isbn" book.db | awk -F '::' '{print $4}'));
+		name=$(echo $(grep -w "$book_isbn" .book.db | awk -F '::' '{print $1}'));
+		price=$(echo $(grep -w "$book_isbn" .book.db | awk -F '::' '{print $3}'));
+		number=$(echo $(grep -w "$book_isbn" .book.db | awk -F '::' '{print $4}'));
 		echo -e "\n\nFound book $book_isbn!\n";
 		echo -e -n "Book Name: ";
 		echo -e "<<$name>>";
@@ -196,7 +196,7 @@ find_by_isbn()
 
 get_booknum()
 {
-	local n=`wc -l "book.db" | awk '{print $1}'`;
+	local n=`wc -l ".book.db" | awk '{print $1}'`;
 	echo $n;
 }
 print_list_book()
@@ -208,10 +208,10 @@ print_list_book()
 	while [ "$i" -lt "$line" ];
 	do 
 		i=$(($i+1));
-		name=`cat "book.db" | sed -n "$i"p"" "book.db" | awk -F "::" '{print $1}'`;
-		isbn=`cat "book.db" | sed -n "$i"p"" "book.db" | awk -F "::" '{print $2}'`;
-		price=`cat "book.db" | sed -n "$i"p"" "book.db" | awk -F "::" '{print $3}'`;
-		number=`cat "book.db" | sed -n "$i"p"" "book.db" | awk -F "::" '{print $4}'`;
+		name=`cat ".book.db" | sed -n "$i"p"" ".book.db" | awk -F "::" '{print $1}'`;
+		isbn=`cat ".book.db" | sed -n "$i"p"" ".book.db" | awk -F "::" '{print $2}'`;
+		price=`cat ".book.db" | sed -n "$i"p"" ".book.db" | awk -F "::" '{print $3}'`;
+		number=`cat ".book.db" | sed -n "$i"p"" ".book.db" | awk -F "::" '{print $4}'`;
 		printf "%-20s %-16s %-16.2f %-16d\n" $name $isbn $price $number;
 
 	done 
@@ -241,15 +241,28 @@ delete_books()
 		then 
 			echo_choice_error;
 		else 
-			sed "$whichbook"d"" book.db >> newfile
-			cp newfile book.db
+			sed "$whichbook"d"" .book.db >> newfile
+			cp newfile .book.db
 			rm -rf newfile
+			isempty=$(wc -l .book.db | awk -F ' ' '{print $1}')
+			if [ "$isempty" == "0" ] 
+			then
+				rm -rf .book.db
+			fi 
 		fi 
 	fi 
 }
 list_books()
 {
-	print_list_book;
+	istrue=0;
+	db_is_exist;
+	isexist=$?;
+	if [ $isexist == "0" ]
+	then
+		echo "No database!";
+	else 
+		print_list_book;
+	fi
 }
 update_books()
 {
@@ -274,7 +287,7 @@ update_books()
 		then 
 			echo_choice_error;
 		else
-			sed "$whichbook"d"" book.db;
+			sed "$whichbook"d"" .book.db;
 			# not complete
 			echo -e -n "Book Name: ";
 			read book_name;
