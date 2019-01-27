@@ -9,6 +9,159 @@ user_name="";
 user_passwd="";
 istrue=0;
 
+usr_entry()
+{
+	istrue=0;
+	while [ $istrue == 0 ] 
+	do 
+		echo -e "Welcome enter into my book store!";
+		echo -e -n "Who are you?[admin|guest]: "
+		check_user_perm;
+	done
+	
+	echo -e "\n\nSafety exited system!";
+}
+
+check_user_perm()
+{
+	read user_ident;
+	
+	if [ "$user_ident" == "admin" ]
+	then 
+		echo_admin_login;
+	elif [ "$user_ident" == "guest" ]
+	then 
+		echo_guest_interface;
+	else
+		echo_choice_error;
+	fi 
+
+}
+
+echo_admin_login()
+{
+	while [ $istrue == 0 ]
+	do 
+		isexistdtfile=$(find -name .admin_account);
+		if [ -z $isexistdtfile ]
+		then
+			echo -e "This book store have no administrator at present!";
+			return;
+		fi 
+		echo -e "\n\nHi administrator, please enter your account and password!"
+		echo -e -n "admin account: "
+		read admin_acc;
+		echo -e -n "admin password: "
+		read admin_pwd;
+		accandpwd=`cat .admin_account | grep -w $admin_acc`;
+		apwd=`cat .admin_account | grep -w $admin_acc | awk -F ':' '{print $2}'`
+
+		if [ -z $accandpwd ] 
+		then
+			echo -e "account name or password error!\n"
+		else
+			if [ "$admin_pwd" == "$apwd" ] 
+			then 
+				echo_admin_interface;
+			fi
+		fi 
+	done 
+}
+
+echo_admin_interface()
+{
+	while [ $istrue == 0 ] 
+	do
+		echo -e "\n\nEnter admin interface successufl\n";
+		echo -e "1. List all guest account name.";
+		echo -e "2. Remind all user change them password.";
+		echo -e "3. Books archive";
+		echo -e "4. Change user password";
+		echo -e "5. Skip to previous interface";
+		echo -e "6. Skip to main interface";
+		echo -e "7. Exit system\n";
+		echo -e -n "Which item do you want to select?[1-7]: ";
+		read item;
+		case "$item" in
+			1) list_all_guest;;
+			2) remind_all_user;;
+			3) book_archive;;
+			4) change_admin_pwd;;
+			5) return;;
+			6) usr_entry;;
+			7) istrue=1;;
+			*) echo_choice_error;;
+		esac 
+	done 
+}
+
+echo_guest_interface()
+{
+	while [ $istrue == "0" ]
+	do 
+		echo -e "For guests, we have more services, please choice one.\n";
+		echo -e "Please register your account if you came here for the first time!";
+		echo -e "Please login if you are old customer!\n"
+			
+		echo -e "1. Regists your account";
+		echo -e "2. Login your account";
+		echo -e "3. I'm VIP(Special Channel)";
+		echo -e "4. Skip to previous interface";
+		echo -e "5. Exit system"
+		echo -e -n "Which item do you want to select?[1-5]: ";
+		read item;
+		case $item in
+			1) regist_guest_account;;
+			2) guest_login;;
+			3) VIP_login;;
+			4) return;;
+			5) istrue=1;;
+			*) echo_choice_error;;
+		esac 
+	done 
+}
+regist_guest_account()
+{
+	echo -e -n "account name: ";
+	read guestnam;
+	echo -e -n "account password: ";
+	read guestpwd;
+	echo -e "$guestnam":"$guestpwd" >> .guest_account;
+	check_account_repeat $guestnam $guestpwd;
+}
+guest_login()
+{
+	echo -e -n "account name: ";
+	read guestnam;
+	echo -e -n "account password: ";
+	read guestpwd;
+	# Not implementation
+	# if (login successful) then echo_interface;
+	# else echo_usr_pwd_error.
+
+}
+VIP_login()
+{
+	# Not implementation
+	echo -e ;
+}
+check_account_repeat()
+{
+	# not implementation 
+	echo -e ;
+}
+list_all_guest()
+{
+	isexistfile=$(find -name .guest_account);
+	if [ -z $isexistfile ]
+	then
+		echo -e "No guest account at present!";
+	else 
+		allname=$(cat .guest_account | awk -F ':' '{print $1}');
+		echo -e -n $allname;
+	fi 
+
+}
 usr_login() 
 {
 	while [ $istrue == 0 ]
@@ -342,4 +495,4 @@ echo_error()
 		exit -1;
 	fi
 }
-usr_login;
+usr_entry;
